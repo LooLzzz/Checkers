@@ -1,0 +1,9 @@
+.vscode/
+
+
+bin/*.o
+output/*.exe
+output/*.dat
+
+*.exe
+state.dat
