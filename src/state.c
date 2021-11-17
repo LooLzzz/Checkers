@@ -1,5 +1,7 @@
 #include "state.h"
 
+#define MAX_PIECE_SIZE 8
+
 void printState(GameState *state)
 {
     int i, j;
@@ -62,15 +64,78 @@ void initializeState(GameState *state)
             }
             state->board[i][j].bg = is_even ? 'R' : 'W';
         }
+    
+    state->activeTurn = 0;
+    state->winner = 0;
+}
+
+void writeCellToFile(FILE *fp, Cell cell)
+{
+     fwrite(&cell.fg, sizeof(char), 1, fp);
+     fwrite(&cell.bg, sizeof(char), 1, fp);
+     fwrite(cell.piece, sizeof(char), MAX_PIECE_SIZE, fp);
+}
+
+void readCellFromFile(FILE *fp, Cell *cell)
+{
+    //Allocate memory for the piece
+    cell->piece = (char*) malloc(sizeof(char) * MAX_PIECE_SIZE);
+    if (cell->piece == NULL)
+    {
+        printf("Error allocating memory\n");
+        exit(1);
+    }
+
+
+    fread(&(cell->fg), sizeof(char), 1, fp);
+    fread(&(cell->bg), sizeof(char), 1, fp);
+    fread(cell->piece, sizeof(char), MAX_PIECE_SIZE, fp);
 }
 
 void saveState(char *fileName, GameState *state)
 {
-    //TODO
+    FILE *fp = fopen(fileName, "wb");
+    fwrite(&(state->activeTurn), sizeof(int), 1, fp);
+    fwrite(&(state->winner), sizeof(int), 1, fp);
+
+    for(int row = 0; row < BOARD_SIZE; row++)
+    {
+        for(int col = 0; col < BOARD_SIZE; col++)
+        {
+            writeCellToFile(fp, state->board[row][col]);
+        }
+    }
+    fclose(fp);
+}
+
+void readStateFromFile(FILE *fp, GameState *state)
+{
+    fread(&(state->activeTurn), sizeof(int), 1, fp);
+    fread(&(state->winner), sizeof(int), 1, fp);
+
+    // Read All Cells
+    for(int row = 0; row < BOARD_SIZE; row++)
+    {
+        for(int col = 0; col < BOARD_SIZE; col++)
+        {
+            readCellFromFile(fp, &state->board[row][col]);
+        }
+    }
 }
 
 void loadState(char *fileName, GameState *state)
 {
-    //TODO
-    initializeState(state);
+    FILE *fp = fopen(fileName, "rb");
+    if (fp == NULL)
+    {
+        printf("Error: file not found so initializing\n");
+        initializeState(state);
+        saveState(fileName, state);
+    }
+    else
+    {
+        readStateFromFile(fp, state);
+        fclose(fp);
+    }
+    
 }

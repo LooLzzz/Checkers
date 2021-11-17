@@ -26,3 +26,7 @@ void printState(GameState *state);
 void initializeState(GameState *state);
 void saveState(char *fileName, GameState *state);
 void loadState(char *fileName, GameState *state);
+void readStateFromFile(FILE *fp, GameState *state);
+void readCellFromFile(FILE *fp, Cell *cell);
+void writeCellToFile(FILE *fp, Cell cell);
+
