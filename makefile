@@ -4,8 +4,9 @@ srcdir = ./src
 bindir = ./bin
 outdir = ./output
 
-objects = main.o utils.o
-objectsWithPath = $(foreach obj, $(objects), $(bindir)/$(obj)) # prepend `bindir` to all objects
+objects = colors main state utils
+objectsWithExt = $(foreach obj, ${objects}, ${obj}.o) # prepend `.o` to all objects
+objectsWithPath = $(foreach obj, $(objectsWithExt), $(bindir)/$(obj)) # prepend `bindir` to all objects
 
 gccFlags = -g -Wno-write-strings -Werror -lm
 target = checkers.exe
@@ -13,7 +14,7 @@ target = checkers.exe
 INPUT = state.dat
 
 
-build: mkdirs $(objects)
+build: mkdirs $(objectsWithExt)
 	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsWithPath) -ldl -lrt
 
 mkdirs:
