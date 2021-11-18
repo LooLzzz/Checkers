@@ -2,19 +2,24 @@
 
 int main(int argc, char *argv[])
 {
-    char *inputFilename;
+    char inputFilename[MAX_STR_LEN] = {0};
     GameState state;
 
-    // filename must be provided
+    // state's filename must be provided
     if (argc == 2)
-        inputFilename = argv[1];
+    {
+        int idx = strrchr(argv[0], '/') - argv[0];
+        if (idx > 0)
+            memcpy(inputFilename, argv[0], sizeof(char) * ++idx);
+        strcat(inputFilename, argv[1]);
+    }
     else
     {
         printf("Usage: %s <input file>\n", "./checkers");
         return 1;
     }
 
-    loadState(inputFilename, &state); // will use `initializeState()` if file doesn't exist or empty
+    loadState(inputFilename, &state);
     printState(&state);
 
     //TODO: implement game loop
