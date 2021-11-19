@@ -11,6 +11,7 @@ typedef struct _THEME
 {
     char pieces[2][MAX_PIECE_SIZE];
     char tiles[2][MAX_PIECE_SIZE];
+    char players[2][MAX_PIECE_SIZE];
 } Theme;
 
 typedef enum _PLAYER
@@ -33,6 +34,13 @@ typedef enum _PIECE_TYPE
     PIECE_MAN,
     PIECE_KING,
 } PIECE_TYPE;
+
+typedef enum _MOVE_TYPE
+{
+    MOVE_INVALID = 0,
+    MOVE_WALK,
+    MOVE_JUMP,
+} MOVE_TYPE;
 
 /**
  * Piece struct
@@ -70,6 +78,23 @@ typedef struct _CELL
      */
     TILE_COLOR tile;
 } Cell;
+
+/**
+ * Move struct
+ * @param moveType move type, one of [ INVALID, WALK, JUMP ]
+ * @param crownPiece Did the piece reach the end, make king [ 0 = False, 1 = True ]
+ * @param middlePiece the piece that was eaten, NULL if no piece was eaten
+ * @param src the piece that we are moving
+ * @param dest the piece that we are going to land in
+ */
+typedef struct _MOVE
+{
+    MOVE_TYPE moveType;
+    char crownPiece;
+    Piece *middlePiece;
+    Piece *src;
+    Piece *dest;
+} Move;
 
 /**
  * Board state struct

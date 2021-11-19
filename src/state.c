@@ -8,7 +8,10 @@ void printState(GameState *state)
     system("clear");
 
     // print active player
-    printf("\n%12c%s's turn\n", 0, player2str(state->activePlayer));
+    printf("\n%12s%s's turn%s\n",
+           "",
+           player2str(state->activePlayer),
+           getEsc());
 
     // print letter on the top
     printf("\n%3s", "");
@@ -100,20 +103,23 @@ void readStateFromFile(FILE *fp, GameState *state)
 void loadState(char *fileName, GameState *state)
 {
     int i;
-    char c;
+    char c[MAX_STR_LEN];
     FILE *fp = fopen(fileName, "rb");
 
     if (fp)
     {
         //file exists
         printf("Continue existing game? [Y/N]: ");
-        do
+        while (1)
         {
-            scanf("%c", &c);
-            c = toupper(c);
-        } while (c != 'Y' && c != 'N');
+            scanf("%s", &c);
+            *c = toupper(*c);
+            if (*c == 'Y' || *c == 'N')
+                break;
+            printf("[Y/N]: ");
+        };
 
-        if (c == 'Y')
+        if (*c == 'Y')
         {
             readStateFromFile(fp, state);
             fclose(fp);

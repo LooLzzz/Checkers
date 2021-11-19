@@ -1,11 +1,12 @@
 #include "utils.h"
 
+// TODO: theme selection functionality
+
 char *piece2str(Piece piece)
 {
-    // TODO: theme selection functionality
-    Theme theme = THEME_1; // THEME_2;
+    char *res                       = calloc(MAX_PIECE_SIZE, sizeof(char));
+    Theme theme                     = THEME_1; // THEME_2;
     char symbols[][MAX_SYMBOL_SIZE] = SYMBOLS;
-    char *res   = calloc(MAX_PIECE_SIZE, sizeof(char));
 
     // piece's color
     if (piece.player > 0)
@@ -19,9 +20,8 @@ char *piece2str(Piece piece)
 
 char *tile2str(TILE_COLOR tile)
 {
-    // TODO: theme selection functionality
-    Theme theme = THEME_1; // THEME_2;
     char *res   = calloc(MAX_PIECE_SIZE, sizeof(char));
+    Theme theme = THEME_1; // THEME_2;
 
     strcat(res, theme.tiles[tile]);
     return res;
@@ -29,11 +29,13 @@ char *tile2str(TILE_COLOR tile)
 
 char *player2str(PLAYER player)
 {
-    if (player == PLAYER_1)
-        return "PLAYER1";
-    else if (player == PLAYER_2)
-        return "PLAYER2";
-    return "";
+    char *res   = calloc(MAX_PIECE_SIZE, sizeof(char));
+    Theme theme = THEME_1; // THEME_2;
+
+    strcat(res, theme.players[player != PLAYER_1]);
+    strcat(res, player == PLAYER_1 ? " PLAYER1" : " PLAYER2");
+
+    return res;
 }
 
 char *getEsc()

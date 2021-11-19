@@ -8,4 +8,6 @@
 #include "objects.h"
 
 int main(int argc, char *argv[]);
-void gameloop(GameState state);
+Move validateInput(GameState *state, char *src, char *dest);
+void movePiece(Move move);
+void gameloop(GameState *state);
