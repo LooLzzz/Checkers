@@ -19,10 +19,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // initialize game state
     loadState(inputFilename, &state);
-    printState(&state);
-
-    //TODO: implement game loop
+    
+    // start game
+    gameloop(state);
 
     return 0;
+}
+
+void gameloop(GameState state)
+{
+    //TODO: implement game loop
+    printState(&state);
 }
