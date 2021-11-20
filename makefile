@@ -1,7 +1,7 @@
 # CHECKERS MAKEFILE #
 
 
-## CONFIG  ##
+## CONFIG ##
 srcdir = ./src
 bindir = ./bin
 outdir = ./output
@@ -13,10 +13,10 @@ objects = main state utils
 objectsExpended = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
 extraDeps = objects.h
 
-INPUT_FILE = state.dat
+INPUT = state.dat
 
 
-## RULES  ##
+## RULES ##
 .PHONY: run clean
 
 # target rule
@@ -28,9 +28,10 @@ $(bindir)/%.o: $(srcdir)/%.c $(srcdir)/%.h $(srcdir)/$(extraDeps)
 	gcc $(gccFlags) -c $(srcdir)/$*.c -o $(bindir)/$*.o
 
 run: $(outdir)/$(target)
-	$(outdir)/$(target) $(INPUT_FILE)
+	$(outdir)/$(target) $(INPUT)
 
 clean:
 	rm -f $(outdir)/*.exe
 	rm -f $(outdir)/*.dat
 	rm -f $(bindir)/*.o
+	rm -f *.stackdump

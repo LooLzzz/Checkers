@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 #define MAX_PIECE_SIZE 32
 #define MAX_SYMBOL_SIZE 7
 #define MAX_STR_LEN 256
@@ -16,10 +18,10 @@ typedef struct _THEME
 
 typedef enum _PLAYER
 {
-    PLAYER_NONE = 0,
+    DRAW = -1,
+    PLAYER_NONE,
     PLAYER_1,
     PLAYER_2,
-    DRAW,
 } PLAYER;
 
 typedef enum _TILE_COLOR
@@ -37,7 +39,8 @@ typedef enum _PIECE_TYPE
 
 typedef enum _MOVE_TYPE
 {
-    MOVE_INVALID = 0,
+    MOVE_INVALID = -1,
+    MOVE_NONE,
     MOVE_WALK,
     MOVE_JUMP,
 } MOVE_TYPE;
@@ -55,10 +58,18 @@ typedef struct _PIECE
     PIECE_TYPE type;
 
     /**
-     * player the player whose piece is owned by
+     * the player whose piece is owned by
      */
     PLAYER player;
 } Piece;
+
+typedef struct _COORD
+{
+    int i;
+    int j;
+} Coord;
+
+// typedef int Coord[2];
 
 /**
  * Cell struct
@@ -81,19 +92,20 @@ typedef struct _CELL
 
 /**
  * Move struct
- * @param moveType move type, one of [ INVALID, WALK, JUMP ]
+ * @param moveType move type, one of [ MOVE_INVALID, MOVE_NONE, MOVE_WALK, MOVE_JUMP ]
  * @param crownPiece Did the piece reach the end, make king [ 0 = False, 1 = True ]
- * @param middlePiece the piece that was eaten, NULL if no piece was eaten
+ * @param middle the piece that was eaten, NULL if no piece was eaten
  * @param src the piece that we are moving
  * @param dest the piece that we are going to land in
  */
 typedef struct _MOVE
 {
     MOVE_TYPE moveType;
-    char crownPiece;
-    Piece *middlePiece;
-    Piece *src;
-    Piece *dest;
+    bool crownPiece;
+    Coord middle;
+    Coord src;
+    Coord dest;
+    char errorMessage[MAX_STR_LEN];
 } Move;
 
 /**
@@ -121,10 +133,20 @@ typedef struct _GAME_STATE
 
     /**
      * The player who won the game
+     * @param DRAW the game ended in a draw
      * @param PLAYER_NONE means the game is still going.
      * @param PLAYER_1 first player won
      * @param PLAYER_2 second player won
-     * @param DRAW the game ended in a draw
      */
     PLAYER winner;
+
+    /**
+     * Last move that was made
+     * @param moveType move type, one of [ MOVE_INVALID, MOVE_NONE, MOVE_WALK, MOVE_JUMP ]
+     * @param crownPiece Did the piece reach the end, make king [ 0 = False, 1 = True ]
+     * @param middle the piece that was eaten, NULL if no piece was eaten
+     * @param src the piece that we are moving
+     * @param dest the piece that we are going to land in
+     */
+    Move lastMove;
 } GameState;

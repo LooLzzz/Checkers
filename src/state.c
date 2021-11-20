@@ -1,17 +1,18 @@
 #include "state.h"
 
-void printState(GameState *state)
+void printState(GameState *state, char clearTerminal)
 {
     int i, j;
+    char str[MAX_PIECE_SIZE];
 
-    // clear console
-    system("clear");
+    // clear terminal before printing the next state
+    if (clearTerminal)
+        system("clear");
 
     // print active player
-    printf("\n%12s%s's turn%s\n",
-           "",
-           player2str(state->activePlayer),
-           getEsc());
+    printf("\n%12s", ""); // whitespace padding
+    player2str(state->activePlayer, str);
+    printf("%s's turn %s\n", str, ESC);
 
     // print letter on the top
     printf("\n%3s", "");
@@ -28,10 +29,10 @@ void printState(GameState *state)
         // print pieces and tiles
         for (j = 0; j < BOARD_SIZE; j++)
         {
-            printf("%s%s%s",
-                   tile2str(state->board[i][j].tile),
-                   piece2str(state->board[i][j].piece),
-                   getEsc());
+            tile2str(state->board[i][j].tile, str);
+            printf("%s", str);
+            piece2str(state->board[i][j].piece, str);
+            printf("%s%s", str, ESC);
         }
         printf("\n");
     }
@@ -40,11 +41,13 @@ void printState(GameState *state)
 
 void initializeState(GameState *state)
 {
-    char is_even;
+    bool is_even;
     int i, j;
 
     // initialize basic info
-    state->activePlayer = PLAYER_1;
+    state->activePlayer      = PLAYER_1;
+    state->winner            = PLAYER_NONE;
+    state->lastMove.moveType = MOVE_NONE;
 
     // initialize cells
     for (i = 0; i < BOARD_SIZE; i++)
@@ -74,35 +77,14 @@ void initializeState(GameState *state)
 
 void saveState(char *fileName, GameState *state)
 {
-    int i, j;
     FILE *fp = fopen(fileName, "wb");
 
-    fwrite(&state->activePlayer, sizeof(int), 1, fp);
-    fwrite(&state->winner, sizeof(int), 1, fp);
-
-    for (i = 0; i < BOARD_SIZE; i++)
-        for (j = 0; j < BOARD_SIZE; j++)
-            fwrite(&state->board[i][j], sizeof(Cell), 1, fp);
-
+    fwrite(state, sizeof(GameState), 1, fp);
     fclose(fp);
-}
-
-void readStateFromFile(FILE *fp, GameState *state)
-{
-    int i, j;
-
-    fread(&state->activePlayer, sizeof(int), 1, fp);
-    fread(&state->winner, sizeof(int), 1, fp);
-
-    // Read All Cells
-    for (i = 0; i < BOARD_SIZE; i++)
-        for (j = 0; j < BOARD_SIZE; j++)
-            fread(&state->board[i][j], sizeof(Cell), 1, fp);
 }
 
 void loadState(char *fileName, GameState *state)
 {
-    int i;
     char c[MAX_STR_LEN];
     FILE *fp = fopen(fileName, "rb");
 
@@ -121,13 +103,36 @@ void loadState(char *fileName, GameState *state)
 
         if (*c == 'Y')
         {
-            readStateFromFile(fp, state);
+            fread(state, sizeof(GameState), 1, fp);
             fclose(fp);
             return;
         }
     }
+    // else
 
     // file doesn't exist or user wants to start a new game
     initializeState(state);
     saveState(fileName, state);
+}
+
+void deletePiece(Cell board[][BOARD_SIZE], Coord src)
+{
+    board[src.i][src.j].piece.player = PLAYER_NONE;
+    board[src.i][src.j].piece.type   = PIECE_NONE;
+}
+
+void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest)
+{
+    board[dest.i][dest.j].piece = board[src.i][src.j].piece;
+    deletePiece(board, src);
+}
+
+void crownPiece(Cell board[][BOARD_SIZE], Coord src)
+{
+    board[src.i][src.j].piece.type = PIECE_KING;
+}
+
+void possibleJumpMoves(GameState *state)
+{
+    //TODO
 }

@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "objects.h"
 #include "state.h"
 #include "utils.h"
-#include "objects.h"
 
 int main(int argc, char *argv[]);
-Move validateInput(GameState *state, char *src, char *dest);
-void movePiece(Move move);
-void gameloop(GameState *state);
+
+#define nextPlayer(activePlayer) activePlayer == PLAYER_1 ? PLAYER_2 : PLAYER_1
+
+int isValidCell(char *cell);
+void validateInput(GameState *state, int argsCount, char *src, char *dest);
+void validateMove(GameState *state, char *src, char *dest);
+void makeMove(GameState *state);
+int gameloop(GameState *state);
