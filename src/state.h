@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "array.h"
 #include "objects.h"
 #include "utils.h"
 

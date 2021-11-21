@@ -48,11 +48,14 @@ int main(int argc, char *argv[])
 
 int gameloop(GameState *state)
 {
+    //TODO: add check win condition
+
     int argsCount = 0;
     char line[MAX_STR_LEN], rest[MAX_STR_LEN];
     char src[MAX_STR_LEN], dest[MAX_STR_LEN];
+    Array possibleJumps = array_new(sizeof(Move));
 
-    while (1)
+    while (state->activePlayer > 0)
     {
         // printState(state, 0); // dont clear terminal
         printState(state, 1); // clear terminal
@@ -80,17 +83,18 @@ int gameloop(GameState *state)
                     state->lastMove.dest.i + '1',
                     moveType2str(state->lastMove.moveType),
                     crowned2str(state->lastMove.crownPiece));
-            str2playercolor(line, nextPlayer(state->activePlayer));
-            printf("Last move: %s%s\n", line, ESC);
+            str2playercolor(line, state->lastMove.player);
+            printf("Last move: %s %s\n", line, ESC);
 
             // print input line
             printf("Input: ");
         }
 
         scanf("\n");
-        gets(line);
-        // fgets(line, MAX_STR_LEN, stdin);
-        // scanf("%s[^\n]", line);
+        fgets(line, MAX_STR_LEN, stdin);
+        // str_strip(line);
+        if (line[strlen(line) - 1] == '\n')
+            line[strlen(line) - 1] = '\0';
 
         // check for exit clause
         if (_strcmpi(line, "exit") == 0)
@@ -107,12 +111,41 @@ int gameloop(GameState *state)
         validateInput(state, argsCount, src, dest);
         validateMove(state, src, dest);
 
+        // if move is valid, check for jumps
+        getAllPossibleJumps(state, &possibleJumps);
+        validateJump(state, possibleJumps);
+        array_free(&possibleJumps);
+
         if (state->lastMove.moveType <= 0) // an invalid move
             continue;
 
         // move piece
         makeMove(state);
-        state->activePlayer = nextPlayer(state->activePlayer);
+
+        // are there any more jumps available for this piece?
+        getPossibleJumps(state, &possibleJumps, state->lastMove.dest.i, state->lastMove.dest.j);
+
+        //DEBUG
+        Coord c_src, c_dest;
+
+        printf("<< number of possible jumps: %d >>\n", possibleJumps.length);
+        for (int d = 0; d < possibleJumps.length; d++)
+        {
+            c_src  = ((Move *)possibleJumps.data)[d].src;
+            c_dest = ((Move *)possibleJumps.data)[d].dest;
+            printf("\t%c%c -> %c%c\n",
+                   c_src.j + 'A',
+                   c_src.i + '1',
+                   c_dest.j + 'A',
+                   c_dest.i + '1');
+        }
+        // DEBUG
+
+        if (possibleJumps.length == 0)
+            // if there are no more jumps available, switch player
+            state->activePlayer = nextPlayer(state->activePlayer);
+        array_free(&possibleJumps);
+
         saveState(inputFilename, state);
     }
 }
@@ -187,6 +220,7 @@ void validateMove(GameState *state, char *src, char *dest)
     Piece *p_dest       = &state->board[numDest][letterDest].piece;
     Piece *p_middle     = NULL;
     Move move           = {
+        .player       = activePlayer,
         .moveType     = MOVE_INVALID,
         .crownPiece   = 0,
         .src          = {numSrc, letterSrc},
@@ -222,7 +256,6 @@ void validateMove(GameState *state, char *src, char *dest)
         if (p_middle->player != PLAYER_NONE && p_middle->player != activePlayer)
             if (move.src.j + 2 == move.dest.j || move.src.j - 2 == move.dest.j)
             {
-                printf("2\n");
                 move.moveType = MOVE_JUMP; // valid jump
                 goto end;
             }
@@ -236,10 +269,66 @@ end:
     state->lastMove = move;
 }
 
+void validateJump(GameState *state, Array possibleJumps)
+{
+    int i;
+    Move move;
+    bool flag = 0;
+
+    // make sure move is valid and there are jumps to be taken
+    if (state->lastMove.moveType > 0 && possibleJumps.length > 0)
+        if (state->lastMove.moveType != MOVE_JUMP)
+        {
+            state->lastMove.moveType = MOVE_INVALID;
+            strcpy(state->lastMove.errorMessage, "Jump must be taken if available");
+        }
+}
+
+void getPossibleJumps(GameState *state, Array *array, int i, int j)
+{
+    int k;
+    char src[3]      = {0};
+    char dest[3]     = {0};
+    Move lastMove    = state->lastMove;
+    int offsets[][2] = {
+        {-2, -2},
+        {-2, 2},
+        {2, -2},
+        {2, 2},
+    };
+
+    coord2str(src, i, j);
+    for (k = 0; k < 4; k++)
+    {
+        coord2str(dest, i + offsets[k][0], j + offsets[k][1]);
+
+        state->lastMove.moveType = MOVE_NONE;
+        if (isValidCell(dest))
+        {
+            validateMove(state, src, dest);
+            if (state->lastMove.moveType == MOVE_JUMP)
+                array_push(array, &state->lastMove);
+        }
+    }
+
+    // restore changes to `lastMove`
+    state->lastMove = lastMove;
+}
+
+void getAllPossibleJumps(GameState *state, Array *array)
+{
+    int i, j;
+
+    for (i = 0; i < BOARD_SIZE; i++)
+        for (j = 0; j < BOARD_SIZE; j++)
+        {
+            if (state->board[i][j].piece.player == state->activePlayer)
+                getPossibleJumps(state, array, i, j);
+        }
+}
+
 void makeMove(GameState *state)
 {
-    //TODO: add support for player to eat more than one piece in a row
-
     Move move = state->lastMove;
 
     // move to new location

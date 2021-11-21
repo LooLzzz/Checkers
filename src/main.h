@@ -14,5 +14,9 @@ int main(int argc, char *argv[]);
 int isValidCell(char *cell);
 void validateInput(GameState *state, int argsCount, char *src, char *dest);
 void validateMove(GameState *state, char *src, char *dest);
+void validateJump(GameState *state, Array possibleJumps);
 void makeMove(GameState *state);
 int gameloop(GameState *state);
+
+void getPossibleJumps(GameState *state, Array *array, int i, int j);
+void getAllPossibleJumps(GameState *state, Array *moves);

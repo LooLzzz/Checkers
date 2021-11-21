@@ -32,7 +32,7 @@ void printState(GameState *state, char clearTerminal)
             tile2str(state->board[i][j].tile, str);
             printf("%s", str);
             piece2str(state->board[i][j].piece, str);
-            printf("%s%s", str, ESC);
+            printf("%s %s", str, ESC);
         }
         printf("\n");
     }
@@ -85,7 +85,7 @@ void saveState(char *fileName, GameState *state)
 
 void loadState(char *fileName, GameState *state)
 {
-    char c[MAX_STR_LEN];
+    char line[MAX_STR_LEN];
     FILE *fp = fopen(fileName, "rb");
 
     if (fp)
@@ -94,14 +94,15 @@ void loadState(char *fileName, GameState *state)
         printf("Continue existing game? [Y/N]: ");
         while (1)
         {
-            scanf("%s", &c);
-            *c = toupper(*c);
-            if (*c == 'Y' || *c == 'N')
+            // scanf("%s", line);
+            fgets(line, MAX_STR_LEN, stdin);
+            line[0] = toupper(line[0]);
+            if (line[0] == 'Y' || line[0] == 'N')
                 break;
             printf("[Y/N]: ");
         };
 
-        if (*c == 'Y')
+        if (line[0] == 'Y')
         {
             fread(state, sizeof(GameState), 1, fp);
             fclose(fp);
@@ -130,9 +131,4 @@ void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest)
 void crownPiece(Cell board[][BOARD_SIZE], Coord src)
 {
     board[src.i][src.j].piece.type = PIECE_KING;
-}
-
-void possibleJumpMoves(GameState *state)
-{
-    //TODO
 }

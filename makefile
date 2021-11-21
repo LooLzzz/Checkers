@@ -9,7 +9,7 @@ outdir = ./output
 gccFlags = -g -Wno-write-strings -Werror -lm
 
 target = checkers.exe
-objects = main state utils
+objects = main state utils array
 objectsExpended = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
 extraDeps = objects.h
 

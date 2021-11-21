@@ -62,6 +62,18 @@ int _strcmpi(char *a, char *b)
     return tolower(a[i]) - tolower(b[i]);
 }
 
+void str_strip(char *str)
+{
+    int i = 0;
+    int j = 0;
+
+    for (; str[i]; i++)
+        if (!isspace(str[i]))
+            str[j++] = str[i];
+
+    str[j] = '\0';
+}
+
 void str_toupper(char *str)
 {
     int i = 0;
@@ -74,4 +86,9 @@ void str_tolower(char *str)
     int i = 0;
     for (; str[i]; i++)
         str[i] = tolower(str[i]);
+}
+
+void coord2str(char *str, int i, int j)
+{
+    sprintf(str, "%c%c", j + 'A', i + '1');
 }

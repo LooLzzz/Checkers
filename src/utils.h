@@ -32,49 +32,37 @@
 
 #define SYMBOLS  \
     {            \
-        "    ",  \
-        " ⬤  ",  \
-        " ⏹  ",  \
+        "   ",   \
+        " ⬤ ",   \
+        " ■ ",   \
     }
 
 #define moveType2str(type) \
     type == MOVE_JUMP      \
-        ? " => Captured "  \
+        ? " => Jump "  \
         : ""
 
 #define crowned2str(crowned) \
     crowned                  \
         ? " => Crowned! "    \
         : ""
-        
+
+#define cmpcoords(a, b) a.i == b.i && a.j == b.j
+
 char *piece2str(Piece piece, char *str);
 char *tile2str(TILE_COLOR tile, char *str);
 char *player2str(PLAYER player, char *str);
 char *str2playercolor(char *str, PLAYER player);
 
+void coord2str(char *str, int i, int j);
+
 int _strcmpi(char *a, char *b);
+void str_strip(char *str);
 void str_toupper(char *str);
 void str_tolower(char *str);
 
 /*
  * ⏹
- * ⯅
- * ◯
- * ⏺
- * ⬤
- * ⚪
- * ⚫
- * ⛒
- * ⭙
- * ◍
- * 🅚
- * Ⓚ
- * ⊗
- * 🅧
- * 🆇
- * Ⓧ
- * ⓧ
- * 🇽
- * 🔴
- * 🔵
+ * ■
+ * ⯀
  */
