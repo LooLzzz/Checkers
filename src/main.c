@@ -62,6 +62,7 @@ int gameloop(GameState *state)
     char line[MAX_STR_LEN], rest[MAX_STR_LEN];
     char src[MAX_STR_LEN], dest[MAX_STR_LEN];
     Array possibleJumps = array_new(sizeof(Move));
+    Move currentMove;
 
     while (state->activePlayer)
     {
@@ -114,43 +115,60 @@ int gameloop(GameState *state)
         argsCount = sscanf(line, " %s %s %c", src, dest, rest);
 
         // validate input
-        state->lastMove.moveType = MOVE_NONE;
-        validateInput(state, argsCount, src, dest);
-        validateMove(state, src, dest);
+        validateInput(state, argsCount, src, dest, &currentMove);
+
+        // currentMove initialization
+        currentMove.player     = state->activePlayer;
+        currentMove.moveType   = MOVE_INVALID;
+        currentMove.crownPiece = 0;
+        currentMove.src.i      = src[1] - '1';
+        currentMove.src.j      = src[0] - 'A';
+        currentMove.dest.i     = dest[1] - '1';
+        currentMove.dest.j     = dest[0] - 'A';
+        strcpy(currentMove.errorMessage, "Invalid move");
+
+        // validate the move and set `currentMove: {.moveType, .crownPiece}` accordingly
+        fillAndValidateMove(state, &currentMove);
 
         // if move is valid, check for jumps
-        getAllPossibleJumps(state, &possibleJumps);
-        validateJump(state, possibleJumps);
-
-        if (debugMode)
+        if (currentMove.moveType)
         {
-            //DEBUG
-            Coord c_src, c_dest;
+            getAllPossibleJumps(state, &possibleJumps);
+            validateJump(state, &currentMove, possibleJumps);
 
-            printf("<< number of possible jumps: %d >>\n", possibleJumps.length);
-            for (int idx = 0; idx < possibleJumps.length; idx++)
+            if (debugMode) //DEBUG
             {
-                c_src  = ((Move *)array_get(&possibleJumps, idx))->src;
-                c_dest = ((Move *)array_get(&possibleJumps, idx))->dest;
-                printf("\t%c%c -> %c%c\n",
-                       c_src.j + 'A',
-                       c_src.i + '1',
-                       c_dest.j + 'A',
-                       c_dest.i + '1');
+                Coord c_src, c_dest;
+
+                printf("<< number of possible jumps: %d >>\n", possibleJumps.length);
+                for (int idx = 0; idx < possibleJumps.length; idx++)
+                {
+                    c_src  = ((Move *)array_get(&possibleJumps, idx))->src;
+                    c_dest = ((Move *)array_get(&possibleJumps, idx))->dest;
+                    printf("\t# %c%c -> %c%c\n",
+                           c_src.j + 'A',
+                           c_src.i + '1',
+                           c_dest.j + 'A',
+                           c_dest.i + '1');
+                }
             }
+            array_free(&possibleJumps);
         }
 
-        array_free(&possibleJumps);
-        if (state->lastMove.moveType <= 0) // an invalid move
+        // an invalid move, go back to start of the loop
+        if (currentMove.moveType < 1)
+        {
+            state->lastMove = currentMove;
             continue;
+        }
 
         // move piece
-        makeMove(state);
+        makeMove(state, currentMove);
 
         // are there any more jumps available for this piece?
-        if (state->lastMove.moveType == MOVE_JUMP)
+        if (currentMove.moveType == MOVE_JUMP)
         {
-            getPossibleJumps(state, &possibleJumps, state->lastMove.dest.i, state->lastMove.dest.j);
+            getPossibleJumps(state, &possibleJumps, currentMove.dest.i, currentMove.dest.j);
 
             if (possibleJumps.length == 0)
                 // if there are no more jumps available, switch player
@@ -163,32 +181,33 @@ int gameloop(GameState *state)
         // updates `state->winner` and `state->activePlayer` accordingly
         updateWinState(state);
 
+        state->lastMove = currentMove;
         saveState(inputFilename, state);
     }
 }
 
-void validateInput(GameState *state, int argsCount, char *src, char *dest)
+void validateInput(GameState *state, int argsCount, char *src, char *dest, Move *move)
 {
     // argument count
     if (argsCount != 2)
     {
-        state->lastMove.moveType = MOVE_INVALID;
-        strcpy(state->lastMove.errorMessage, "Expected two arguments");
+        move->moveType = MOVE_INVALID;
+        strcpy(move->errorMessage, "Expected two arguments");
         return;
     }
 
     // each argument must be a valid cell
     if (!isValidCell(src))
     {
-        state->lastMove.moveType = MOVE_INVALID;
-        strcpy(state->lastMove.errorMessage, "Invalid source cell");
+        move->moveType = MOVE_INVALID;
+        strcpy(move->errorMessage, "Invalid source cell");
         return;
     }
 
     if (!isValidCell(dest))
     {
-        state->lastMove.moveType = MOVE_INVALID;
-        strcpy(state->lastMove.errorMessage, "Invalid destination cell");
+        move->moveType = MOVE_INVALID;
+        strcpy(move->errorMessage, "Invalid destination cell");
         return;
     }
 }
@@ -223,90 +242,91 @@ int isValidCell(char *cell)
     return 1;
 }
 
-void validateMove(GameState *state, char *src, char *dest)
+void fillAndValidateMove(GameState *state, Move *move)
 {
-    int letterSrc  = src[0] - 'A';
-    int letterDest = dest[0] - 'A';
-    int numSrc     = src[1] - '1';
-    int numDest    = dest[1] - '1';
+    int i, j;
+    int dir         = state->activePlayer == PLAYER_1 ? 1 : -1;
+    int lastRow     = state->activePlayer == PLAYER_1 ? BOARD_SIZE - 1 : 0;
+    Piece *p_src    = &state->board[move->src.i][move->src.j].piece;
+    Piece *p_dest   = &state->board[move->dest.i][move->dest.j].piece;
+    Piece *p_middle = NULL;
 
-    PLAYER activePlayer = state->activePlayer;
-    int dir             = activePlayer == PLAYER_1 ? 1 : -1;
-    int lastRow         = activePlayer == PLAYER_1 ? BOARD_SIZE - 1 : 0;
-    Piece *p_src        = &state->board[numSrc][letterSrc].piece;
-    Piece *p_dest       = &state->board[numDest][letterDest].piece;
-    Piece *p_middle     = NULL;
-    Move move           = {
-        .player       = activePlayer,
-        .moveType     = MOVE_INVALID,
-        .crownPiece   = 0,
-        .src          = {numSrc, letterSrc},
-        .dest         = {numDest, letterDest},
-        .middle       = {(numSrc + numDest) / 2, (letterSrc + letterDest) / 2},
-        .errorMessage = "Invalid move",
-    };
-
-    if (state->lastMove.moveType == MOVE_INVALID)
-        return;
+    // if (move->moveType == MOVE_INVALID)
+    //     return;
 
     // are pieces valid
     if (p_src->type == PIECE_NONE ||
-        p_src->player != activePlayer ||
+        p_src->player != state->activePlayer ||
         p_dest->type != PIECE_NONE)
     {
-        strcpy(move.errorMessage, "Invalid piece");
+        strcpy(move->errorMessage, "Invalid piece");
         goto end;
+    }
+    else
+    {
+        i        = (move->src.i + move->dest.i) / 2;
+        j        = (move->src.j + move->dest.j) / 2;
+        p_middle = &state->board[i][j].piece;
     }
 
     // is walk valid
-    if (move.src.i + dir == move.dest.i || (p_src->type == PIECE_KING && move.src.i - dir == move.dest.i))
-        if (move.src.j + 1 == move.dest.j || move.src.j - 1 == move.dest.j)
+    if (move->src.i + dir == move->dest.i || (p_src->type == PIECE_KING && move->src.i - dir == move->dest.i))
+        if (move->src.j + 1 == move->dest.j || move->src.j - 1 == move->dest.j)
         {
-            move.moveType = MOVE_WALK; // valid walk
+            move->moveType = MOVE_WALK; // valid walk
             goto end;
         }
 
     // is jump valid
-    p_middle = &state->board[(numSrc + numDest) / 2][(letterSrc + letterDest) / 2].piece;
-    if (move.src.i + (2 * dir) == move.dest.i ||
-        (p_src->type == PIECE_KING && move.src.i - 2 * dir == move.dest.i))
-        if (p_middle->player != PLAYER_NONE && p_middle->player != activePlayer)
-            if (move.src.j + 2 == move.dest.j || move.src.j - 2 == move.dest.j)
+    if (move->src.i + (2 * dir) == move->dest.i ||
+        (p_src->type == PIECE_KING && move->src.i - (2 * dir) == move->dest.i))
+        if (move->src.j + 2 == move->dest.j || move->src.j - 2 == move->dest.j)
+            if (p_middle->type != PIECE_NONE && p_middle->player == nextPlayer(state->activePlayer))
             {
-                move.moveType = MOVE_JUMP; // valid jump
+                move->moveType = MOVE_JUMP; // valid jump
                 goto end;
             }
 
 end:
     // should piece be crowned
-    if (move.moveType > 0) // a valid move
-        if (p_src->type != PIECE_KING && move.dest.i == lastRow)
-            move.crownPiece = 1;
-
-    state->lastMove = move;
+    if (move->moveType > 0) // a valid move
+        if (p_src->type != PIECE_KING && move->dest.i == lastRow)
+            move->crownPiece = 1;
 }
 
-void validateJump(GameState *state, Array possibleJumps)
+void validateJump(GameState *state, Move *move, Array possibleJumps)
 {
-    int i;
-    Move move;
-    bool flag = 0;
-
-    // make sure move is valid and there are jumps to be taken
-    if (state->lastMove.moveType > 0 && possibleJumps.length > 0)
-        if (state->lastMove.moveType != MOVE_JUMP)
+    // make sure there are jumps to be taken
+    if (possibleJumps.length > 0)
+    {
+        switch (move->moveType)
         {
-            state->lastMove.moveType = MOVE_INVALID;
-            strcpy(state->lastMove.errorMessage, "Jump must be taken if available");
+            case MOVE_JUMP:
+                // user requested a jump
+                if (state->lastMove.moveType == MOVE_JUMP)
+                    // if last move was a jump, make sure current one is part of the same jump chain
+                    if (!(state->lastMove.dest.i == move->src.i &&
+                          state->lastMove.dest.j == move->src.j))
+                    {
+                        move->moveType = MOVE_INVALID;
+                        strcpy(move->errorMessage, "Jump must be part of the same chain");
+                    }
+                break;
+
+            case MOVE_WALK:
+                // user requested a walk, but there are jumps available
+                move->moveType = MOVE_INVALID;
+                strcpy(state->lastMove.errorMessage, "Jump must be taken if available");
+                break;
         }
+    }
 }
 
 void getPossibleJumps(GameState *state, Array *array, int i, int j)
 {
     int k;
-    char src[3]      = {0};
+    Move move;
     char dest[3]     = {0};
-    Move lastMove    = state->lastMove;
     int offsets[][2] = {
         {-2, -2},
         {-2, 2},
@@ -314,22 +334,36 @@ void getPossibleJumps(GameState *state, Array *array, int i, int j)
         {2, 2},
     };
 
-    coord2str(src, i, j);
+    move.player = state->activePlayer;
+    move.src.i  = i;
+    move.src.j  = j;
+
     for (k = 0; k < 4; k++)
     {
-        coord2str(dest, i + offsets[k][0], j + offsets[k][1]);
+        move.crownPiece = 0;
+        move.moveType   = MOVE_INVALID;
+        move.dest.i     = i + offsets[k][0];
+        move.dest.j     = j + offsets[k][1];
+        strcpy(move.errorMessage, "Invalid move");
 
-        state->lastMove.moveType = MOVE_NONE;
+        coord2str(dest, move.dest.i, move.dest.j);
         if (isValidCell(dest))
         {
-            validateMove(state, src, dest);
-            if (state->lastMove.moveType == MOVE_JUMP)
-                array_push(array, &state->lastMove);
+            fillAndValidateMove(state, &move);
+
+            if (debugMode) //DEBUG
+            {
+                char src[3] = {0};
+                coord2str(src, i, j);
+                printf("%s -> %s:\n", src, dest);
+                printf("\tmoveType = %d\n", move.moveType);
+                printf("\tmsg = %s\n", move.errorMessage);
+            }
+
+            if (move.moveType == MOVE_JUMP)
+                array_push(array, &move);
         }
     }
-
-    // restore changes to `lastMove`
-    state->lastMove = lastMove;
 }
 
 void getAllPossibleJumps(GameState *state, Array *array)
@@ -344,16 +378,17 @@ void getAllPossibleJumps(GameState *state, Array *array)
         }
 }
 
-void makeMove(GameState *state)
+void makeMove(GameState *state, Move move)
 {
-    Move move = state->lastMove;
+    Coord middleCoord = {.i = (move.src.i + move.dest.i) / 2,
+                         .j = (move.src.j + move.dest.j) / 2};
 
     // move to new location
     movePiece(state->board, move.src, move.dest);
 
     // delete middle piece if needed
     if (move.moveType == MOVE_JUMP)
-        deletePiece(state->board, move.middle);
+        deletePiece(state->board, middleCoord);
 
     // crown dest piece if needed
     if (move.crownPiece)

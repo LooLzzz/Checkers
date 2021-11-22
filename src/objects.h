@@ -95,7 +95,6 @@ typedef struct _CELL
  * @param moveType move type, one of [ MOVE_INVALID, MOVE_NONE, MOVE_WALK, MOVE_JUMP ]
  * @param player the player who made the move
  * @param crownPiece Did the piece reach the end, make king [ 0 = False, 1 = True ]
- * @param middle the piece that was eaten, NULL if no piece was eaten
  * @param src the piece that we are moving
  * @param dest the piece that we are going to land in
  */
@@ -104,7 +103,6 @@ typedef struct _MOVE
     MOVE_TYPE moveType;
     PLAYER player;
     bool crownPiece;
-    Coord middle;
     Coord src;
     Coord dest;
     char errorMessage[MAX_STR_LEN];
@@ -147,7 +145,6 @@ typedef struct _GAME_STATE
      * @param moveType move type, one of [ MOVE_INVALID, MOVE_NONE, MOVE_WALK, MOVE_JUMP ]
      * @param player the player who made the move
      * @param crownPiece Did the piece reach the end, make king [ 0 = False, 1 = True ]
-     * @param middle the piece that was eaten, NULL if no piece was eaten
      * @param src the piece that we are moving
      * @param dest the piece that we are going to land in
      */
