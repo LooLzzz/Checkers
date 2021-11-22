@@ -1,6 +1,7 @@
 #include "main.h"
 
 char inputFilename[MAX_STR_LEN] = {0};
+bool debugMode                  = 0;
 
 int main(int argc, char *argv[])
 {
@@ -8,21 +9,22 @@ int main(int argc, char *argv[])
     GameState state;
 
     // state's filename must be provided
-    if (argc == 2)
+    if (argc < 2)
     {
-        int idx = strrchr(argv[0], '/') - argv[0];
-        if (idx > 0)
-            memcpy(inputFilename, argv[0], sizeof(char) * ++idx);
-        strcat(inputFilename, argv[1]);
+        printf("Usage: %s <input file> <debugMode?: {0,1}>\n", argv[0]);
+        return 1;
     }
     else
     {
-        printf("Usage: %s <input file>\n", "./checkers");
-        return 1;
+        strcat(inputFilename, argv[1]);
+        if (argc > 2)
+            sscanf(argv[2], "%d", &debugMode);
     }
 
     // initialize game state
     system("clear");
+    if (debugMode)
+        printf("<< Debug mode enabled >>\n");
     loadState(inputFilename, &state);
 
     while (1)
@@ -42,23 +44,28 @@ int main(int argc, char *argv[])
         break;
     }
 
-    printf("Bye Bye..");
+    if (state.winner)
+        printf("%s\n",
+               state.winner == PLAYER_1
+                   ? str2playercolor("PLAYER1 won!", state.winner)
+                   : str2playercolor("PLAYER2 won!", state.winner));
+    else if (state.winner == DRAW)
+        printf("Draw!\n");
+
+    printf("Exiting..");
     return 0;
 }
 
 int gameloop(GameState *state)
 {
-    //TODO: add check win condition
-
     int argsCount = 0;
     char line[MAX_STR_LEN], rest[MAX_STR_LEN];
     char src[MAX_STR_LEN], dest[MAX_STR_LEN];
     Array possibleJumps = array_new(sizeof(Move));
 
-    while (state->activePlayer > 0)
+    while (state->activePlayer)
     {
-        // printState(state, 0); // dont clear terminal
-        printState(state, 1); // clear terminal
+        printState(state, !debugMode);
 
         if (state->lastMove.moveType == MOVE_NONE)
         {
@@ -97,10 +104,10 @@ int gameloop(GameState *state)
             line[strlen(line) - 1] = '\0';
 
         // check for exit clause
-        if (_strcmpi(line, "exit") == 0)
+        if (str_cmpi(line, "exit") == 0)
             return 0;
 
-        if (_strcmpi(line, "restart") == 0)
+        if (str_cmpi(line, "restart") == 0)
             return 1;
 
         // seperate line into src and dest
@@ -114,8 +121,26 @@ int gameloop(GameState *state)
         // if move is valid, check for jumps
         getAllPossibleJumps(state, &possibleJumps);
         validateJump(state, possibleJumps);
-        array_free(&possibleJumps);
 
+        if (debugMode)
+        {
+            //DEBUG
+            Coord c_src, c_dest;
+
+            printf("<< number of possible jumps: %d >>\n", possibleJumps.length);
+            for (int idx = 0; idx < possibleJumps.length; idx++)
+            {
+                c_src  = ((Move *)array_get(&possibleJumps, idx))->src;
+                c_dest = ((Move *)array_get(&possibleJumps, idx))->dest;
+                printf("\t%c%c -> %c%c\n",
+                       c_src.j + 'A',
+                       c_src.i + '1',
+                       c_dest.j + 'A',
+                       c_dest.i + '1');
+            }
+        }
+
+        array_free(&possibleJumps);
         if (state->lastMove.moveType <= 0) // an invalid move
             continue;
 
@@ -123,28 +148,20 @@ int gameloop(GameState *state)
         makeMove(state);
 
         // are there any more jumps available for this piece?
-        getPossibleJumps(state, &possibleJumps, state->lastMove.dest.i, state->lastMove.dest.j);
-
-        //DEBUG
-        Coord c_src, c_dest;
-
-        printf("<< number of possible jumps: %d >>\n", possibleJumps.length);
-        for (int d = 0; d < possibleJumps.length; d++)
+        if (state->lastMove.moveType == MOVE_JUMP)
         {
-            c_src  = ((Move *)possibleJumps.data)[d].src;
-            c_dest = ((Move *)possibleJumps.data)[d].dest;
-            printf("\t%c%c -> %c%c\n",
-                   c_src.j + 'A',
-                   c_src.i + '1',
-                   c_dest.j + 'A',
-                   c_dest.i + '1');
-        }
-        // DEBUG
+            getPossibleJumps(state, &possibleJumps, state->lastMove.dest.i, state->lastMove.dest.j);
 
-        if (possibleJumps.length == 0)
-            // if there are no more jumps available, switch player
+            if (possibleJumps.length == 0)
+                // if there are no more jumps available, switch player
+                state->activePlayer = nextPlayer(state->activePlayer);
+            array_free(&possibleJumps);
+        }
+        else
             state->activePlayer = nextPlayer(state->activePlayer);
-        array_free(&possibleJumps);
+
+        // updates `state->winner` and `state->activePlayer` accordingly
+        updateWinState(state);
 
         saveState(inputFilename, state);
     }
@@ -341,4 +358,45 @@ void makeMove(GameState *state)
     // crown dest piece if needed
     if (move.crownPiece)
         crownPiece(state->board, move.dest);
+}
+
+void updateWinState(GameState *state)
+{
+    Array p1 = array_new(sizeof(Coord)); // PLAYER_1 pieces
+    Array p2 = array_new(sizeof(Coord)); // PLAYER_2 pieces
+    Coord coord;
+    int i, j;
+
+    for (i = 0; i < BOARD_SIZE; i++)
+        for (j = 0; j < BOARD_SIZE; j++)
+        {
+            coord.i = i;
+            coord.j = j;
+            switch (state->board[i][j].piece.player)
+            {
+                case PLAYER_1:
+                    array_push(&p1, &coord);
+                    break;
+
+                case PLAYER_2:
+                    array_push(&p2, &coord);
+                    break;
+            }
+        }
+
+    // if (p1.length == 0 && p2.length == 0)
+    //     state->winner = DRAW;
+    if (p1.length == 0)
+        state->winner = PLAYER_2;
+    else if (p2.length == 0)
+        state->winner = PLAYER_1;
+    else
+        state->winner = PLAYER_NONE;
+
+    // end game if there is a winner
+    if (state->winner != PLAYER_NONE)
+        state->activePlayer = PLAYER_NONE;
+
+    array_free(&p1);
+    array_free(&p2);
 }

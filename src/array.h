@@ -22,8 +22,13 @@ typedef struct _ARRAY
 Array array_new(int item_size);
 
 /**
- * Will clone given data and append it to the end of the array
+ * Clone given data and append it to the end of the array
  */
 void array_push(Array *array, void *data);
+
+/**
+ * Retrieve item's pointer from a given array & index
+ */
+void *array_get(Array *array, int index);
 
 void array_free(Array *array);

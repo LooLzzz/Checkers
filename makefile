@@ -13,7 +13,8 @@ objects = main state utils array
 objectsExpended = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
 extraDeps = objects.h
 
-INPUT = state.dat
+INPUT = $(outdir)/state.dat
+DEBUG = 0
 
 
 ## RULES ##
@@ -21,14 +22,14 @@ INPUT = state.dat
 
 # target rule
 $(outdir)/$(target): $(objectsExpended)
-	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsExpended) -ldl -lrt
+	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsExpended)
 
 # each `*.o` file is made from its corresponding `*.c` and `*.h`
 $(bindir)/%.o: $(srcdir)/%.c $(srcdir)/%.h $(srcdir)/$(extraDeps)
 	gcc $(gccFlags) -c $(srcdir)/$*.c -o $(bindir)/$*.o
 
 run: $(outdir)/$(target)
-	$(outdir)/$(target) $(INPUT)
+	$(outdir)/$(target) $(INPUT) $(DEBUG)
 
 clean:
 	rm -f $(outdir)/*.exe

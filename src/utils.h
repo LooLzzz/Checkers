@@ -10,8 +10,8 @@
 #define ESC "\e[0m"                // clear formatting
 #define WHITE_TILE "\e[48;5;254m"  // white bg
 #define BLACK_TILE "\e[48;5;130m"  // brown bg
-#define BLACK_PIECE "\e[38;5;232m" // black fg
-#define WHITE_PIECE "\e[38;5;222m" // lightyellow fg
+#define BLACK_PIECE "\e[1;38;5;232m" // black fg
+#define WHITE_PIECE "\e[1;38;5;222m" // lightyellow fg
 
 #define PLAYER1_TXT "\e[48;5;222m\e[38;5;232m" // lightyellow bg, black fg
 #define PLAYER2_TXT "\e[48;5;232m\e[38;5;254m" // black bg, white fg
@@ -37,6 +37,13 @@
         " ■ ",   \
     }
 
+// #define SYMBOLS  \
+//     {            \
+//         "   ",   \
+//         " O ",   \
+//         " K ",   \
+//     }
+
 #define moveType2str(type) \
     type == MOVE_JUMP      \
         ? " => Jump "  \
@@ -56,7 +63,7 @@ char *str2playercolor(char *str, PLAYER player);
 
 void coord2str(char *str, int i, int j);
 
-int _strcmpi(char *a, char *b);
+int str_cmpi(char *a, char *b);
 void str_strip(char *str);
 void str_toupper(char *str);
 void str_tolower(char *str);

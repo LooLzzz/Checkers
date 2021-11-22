@@ -18,5 +18,6 @@ void validateJump(GameState *state, Array possibleJumps);
 void makeMove(GameState *state);
 int gameloop(GameState *state);
 
+void updateWinState(GameState *state);
 void getPossibleJumps(GameState *state, Array *array, int i, int j);
 void getAllPossibleJumps(GameState *state, Array *moves);

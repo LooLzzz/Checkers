@@ -51,7 +51,7 @@ char *str2playercolor(char *str, PLAYER player)
  * compares two strings, ignoring case
  * @return difference between last equal index ( a[i] - b[i] ). 0 means strings are equal.
  */
-int _strcmpi(char *a, char *b)
+int str_cmpi(char *a, char *b)
 {
     int i = 0;
 

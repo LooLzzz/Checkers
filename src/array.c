@@ -19,6 +19,11 @@ void array_push(Array *array, void *data)
     array->length++;
 }
 
+void *array_get(Array *array, int index)
+{
+    return (char*)array->data + index * array->item_size;
+}
+
 void array_free(Array *array)
 {
     free(array->data);
@@ -26,3 +31,7 @@ void array_free(Array *array)
     array->data = NULL;
     array->length = 0;
 }
+
+
+
+
