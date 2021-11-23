@@ -7,9 +7,9 @@
 
 #include "objects.h"
 
-#define ESC "\e[0m"                // clear formatting
-#define WHITE_TILE "\e[48;5;254m"  // white bg
-#define BLACK_TILE "\e[48;5;130m"  // brown bg
+#define ESC "\e[0m"                  // clear formatting
+#define WHITE_TILE "\e[48;5;254m"    // white bg
+#define BLACK_TILE "\e[48;5;130m"    // brown bg
 #define BLACK_PIECE "\e[1;38;5;232m" // black fg
 #define WHITE_PIECE "\e[1;38;5;222m" // lightyellow fg
 
@@ -44,9 +44,15 @@
 //         " K ",   \
 //     }
 
+#define nextPlayer(activePlayer) (activePlayer == PLAYER_1      \
+                                    ? PLAYER_2                  \
+                                    : activePlayer == PLAYER_2  \
+                                        ? PLAYER_1              \
+                                        : PLAYER_NONE)
+
 #define moveType2str(type) \
     type == MOVE_JUMP      \
-        ? " => Jump "  \
+        ? " => Jump "      \
         : ""
 
 #define crowned2str(crowned) \

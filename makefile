@@ -9,9 +9,11 @@ outdir = ./output
 gccFlags = -g -Wno-write-strings -Werror -lm
 
 target = checkers.exe
-objects = main state utils array
-objectsExpended = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
-extraDeps = objects.h
+objects = main state utils array validation
+headerDeps = objects
+
+objectsExpanded = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
+headerDepsExpanded = $(foreach header, ${headerDeps}, $(srcdir)/${header}.h)
 
 INPUT = $(outdir)/state.dat
 DEBUG = 0
@@ -21,11 +23,13 @@ DEBUG = 0
 .PHONY: run clean
 
 # target rule
-$(outdir)/$(target): $(objectsExpended)
-	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsExpended)
+# link all objects together
+$(outdir)/$(target): $(objectsExpanded)
+	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsExpanded)
 
 # each `*.o` file is made from its corresponding `*.c` and `*.h`
-$(bindir)/%.o: $(srcdir)/%.c $(srcdir)/%.h $(srcdir)/$(extraDeps)
+# -c means compile only (no linking)
+$(bindir)/%.o: $(srcdir)/%.c $(srcdir)/%.h $(headerDepsExpanded)
 	gcc $(gccFlags) -c $(srcdir)/$*.c -o $(bindir)/$*.o
 
 run: $(outdir)/$(target)

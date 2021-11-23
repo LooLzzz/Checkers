@@ -18,3 +18,5 @@ void loadState(char *fileName, GameState *state);
 void deletePiece(Cell board[][BOARD_SIZE], Coord src);
 void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest);
 void crownPiece(Cell board[][BOARD_SIZE], Coord src);
+void makeMove(GameState *state, Move move);
+void updateWinState(GameState *state);

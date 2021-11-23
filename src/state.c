@@ -1,5 +1,7 @@
 #include "state.h"
 
+extern bool debugMode;
+
 void printState(GameState *state, char clearTerminal)
 {
     int i, j;
@@ -131,4 +133,62 @@ void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest)
 void crownPiece(Cell board[][BOARD_SIZE], Coord src)
 {
     board[src.i][src.j].piece.type = PIECE_KING;
+}
+
+void makeMove(GameState *state, Move move)
+{
+    Coord middleCoord = {.i = (move.src.i + move.dest.i) / 2,
+                         .j = (move.src.j + move.dest.j) / 2};
+
+    // move to new location
+    movePiece(state->board, move.src, move.dest);
+
+    // delete middle piece if needed
+    if (move.moveType == MOVE_JUMP)
+        deletePiece(state->board, middleCoord);
+
+    // crown dest piece if needed
+    if (move.crownPiece)
+        crownPiece(state->board, move.dest);
+}
+
+void updateWinState(GameState *state)
+{
+    Array p1 = array_new(sizeof(Coord)); // PLAYER_1 pieces
+    Array p2 = array_new(sizeof(Coord)); // PLAYER_2 pieces
+    Coord coord;
+    int i, j;
+
+    for (i = 0; i < BOARD_SIZE; i++)
+        for (j = 0; j < BOARD_SIZE; j++)
+        {
+            coord.i = i;
+            coord.j = j;
+            switch (state->board[i][j].piece.player)
+            {
+                case PLAYER_1:
+                    array_push(&p1, &coord);
+                    break;
+
+                case PLAYER_2:
+                    array_push(&p2, &coord);
+                    break;
+            }
+        }
+
+    // if (p1.length == 0 && p2.length == 0)
+    //     state->winner = DRAW;
+    if (p1.length == 0)
+        state->winner = PLAYER_2;
+    else if (p2.length == 0)
+        state->winner = PLAYER_1;
+    else
+        state->winner = PLAYER_NONE;
+
+    // end game if there is a winner
+    if (state->winner != PLAYER_NONE)
+        state->activePlayer = PLAYER_NONE;
+
+    array_free(&p1);
+    array_free(&p2);
 }
