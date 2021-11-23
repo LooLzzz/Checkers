@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "objects.h"
 
@@ -73,6 +74,9 @@ int str_cmpi(char *a, char *b);
 void str_strip(char *str);
 void str_toupper(char *str);
 void str_tolower(char *str);
+
+/* msleep(): Sleep for the requested number of milliseconds. */
+int msleep(long msec);
 
 /*
  * ⏹

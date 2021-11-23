@@ -2,13 +2,13 @@
 
 extern bool debugMode;
 
-void printState(GameState *state, char clearTerminal)
+void printState(GameState *state)
 {
     int i, j;
     char str[MAX_PIECE_SIZE];
 
     // clear terminal before printing the next state
-    if (clearTerminal)
+    if (!debugMode)
         system("clear");
 
     // print active player
@@ -85,7 +85,7 @@ void saveState(char *fileName, GameState *state)
     fclose(fp);
 }
 
-void loadState(char *fileName, GameState *state)
+void loadState(char *fileName, GameState *state, bool askContinue)
 {
     char line[MAX_STR_LEN];
     FILE *fp = fopen(fileName, "rb");
@@ -93,16 +93,21 @@ void loadState(char *fileName, GameState *state)
     if (fp)
     {
         //file exists
-        printf("Continue existing game? [Y/N]: ");
-        while (1)
+        if (askContinue)
         {
-            // scanf("%s", line);
-            fgets(line, MAX_STR_LEN, stdin);
-            line[0] = toupper(line[0]);
-            if (line[0] == 'Y' || line[0] == 'N')
-                break;
-            printf("[Y/N]: ");
-        };
+            printf("Continue existing game? [Y/N]: ");
+            while (1)
+            {
+                // scanf("%s", line);
+                fgets(line, MAX_STR_LEN, stdin);
+                line[0] = toupper(line[0]);
+                if (line[0] == 'Y' || line[0] == 'N')
+                    break;
+                printf("[Y/N]: ");
+            }
+        }
+        else
+            line[0] = 'Y';
 
         if (line[0] == 'Y')
         {

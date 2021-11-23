@@ -1,10 +1,14 @@
 #include "main.h"
 
 char inputFilename[MAX_STR_LEN] = {0};
-bool debugMode                  = 0;
+GAMEMODE gamemode               = GAME_SP;
+PLAYER self                     = PLAYER_NONE;
+
+bool debugMode = false;
 
 int main(int argc, char *argv[])
 {
+    char line[MAX_STR_LEN];
     bool restartFlag;
     GameState state;
 
@@ -21,12 +25,44 @@ int main(int argc, char *argv[])
             sscanf(argv[2], "%d", &debugMode);
     }
 
+    // ask player for singleplayer or multiplayer mode
+    printf("[S]ingleplayer or [M]ultiplayer?: ");
+    while (1)
+    {
+        fgets(line, MAX_STR_LEN, stdin);
+        line[0] = toupper(line[0]);
+        if (line[0] == 'S' || line[0] == 'M')
+        {
+            gamemode = (line[0] == 'M') ? GAME_MP : GAME_SP;
+            break;
+        }
+        printf("[SP/MP]: ");
+    }
+
+    // ask player for player number
+    if (gamemode == GAME_MP)
+    {
+        printf("Choose player number [1/2]: ");
+        while (1)
+        {
+            fgets(line, MAX_STR_LEN, stdin);
+            line[0] = toupper(line[0]);
+            if (line[0] == '1' || line[0] == '2')
+            {
+                self = (line[0] == '1') ? PLAYER_1 : PLAYER_2;
+                break;
+            }
+            printf("[1/2]: ");
+        }
+    }
+
     // initialize game state
     system("clear");
     if (debugMode)
         printf("<< Debug mode enabled >>\n");
-    loadState(inputFilename, &state);
+    loadState(inputFilename, &state, true);
 
+    // main gameloop
     while (1)
     {
         // start the game
@@ -66,18 +102,18 @@ int gameloop(GameState *state)
 
     while (state->activePlayer)
     {
-        printState(state, !debugMode);
+    gameloop_start:
+        printState(state);
 
         if (state->lastMove.moveType == MOVE_NONE)
         {
             /** first loop **/
             printf("Options: [like \"B3 A4\", \"exit\", \"restart\"] \n");
-            printf("Input: ");
         }
         else if (state->lastMove.moveType == MOVE_INVALID)
         {
             /** invalid move **/
-            printf("%s, try again: ", state->lastMove.errorMessage);
+            printf("%s, try again\n", state->lastMove.errorMessage);
         }
         else
         {
@@ -93,10 +129,19 @@ int gameloop(GameState *state)
                     crowned2str(state->lastMove.crownPiece));
             str2playercolor(line, state->lastMove.player);
             printf("Last move: %s %s\n", line, ESC);
-
-            // print input line
-            printf("Input: ");
         }
+
+        if (gamemode == GAME_MP)
+            while (state->activePlayer != self)
+            {
+                printf("<< Waiting for other player's input >>\n");
+                loadState(inputFilename, state, false);
+                msleep(500);
+                goto gameloop_start;
+            }
+
+        // print input line
+        printf("Input: ");
 
         scanf("\n");
         fgets(line, MAX_STR_LEN, stdin);

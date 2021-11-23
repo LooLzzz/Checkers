@@ -150,3 +150,9 @@ typedef struct _GAME_STATE
      */
     Move lastMove;
 } GameState;
+
+typedef enum _GAMEMODE
+{
+    GAME_SP = 0,
+    GAME_MP,
+} GAMEMODE;

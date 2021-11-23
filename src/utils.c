@@ -92,3 +92,21 @@ void coord2str(char *str, int i, int j)
 {
     sprintf(str, "%c%c", j + 'A', i + '1');
 }
+
+int msleep(long msec)
+{
+    struct timespec ts;
+    int res;
+
+    if (msec < 0)
+        return -1;
+
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res);
+
+    return res;
+}

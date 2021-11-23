@@ -10,10 +10,10 @@
 #include "objects.h"
 #include "utils.h"
 
-void printState(GameState *state, char clearTerminal);
+void printState(GameState *state);
 void initializeState(GameState *state);
 void saveState(char *fileName, GameState *state);
-void loadState(char *fileName, GameState *state);
+void loadState(char *fileName, GameState *state, bool askContinue);
 
 void deletePiece(Cell board[][BOARD_SIZE], Coord src);
 void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest);
