@@ -6,10 +6,11 @@ srcdir = ./src
 bindir = ./bin
 outdir = ./output
 
-gccFlags = -g -Wno-write-strings -Werror -lm
+gccFlags = -g -Wno-write-strings -Werror
+gccFlagsTarget = -lm
 
 target = checkers.exe
-objects = main state utils array validation
+objects = main state utils validation array tree minmax
 headerDeps = objects
 
 objectsExpanded = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)
@@ -25,7 +26,7 @@ DEBUG = 0
 # target rule
 # link all objects together
 $(outdir)/$(target): $(objectsExpanded)
-	gcc $(gccFlags) -o $(outdir)/$(target) $(objectsExpanded)
+	gcc $(gccFlags) $(gccFlagsTarget) -o $(outdir)/$(target) $(objectsExpanded)
 
 # each `*.o` file is made from its corresponding `*.c` and `*.h`
 # -c means compile only (no linking)

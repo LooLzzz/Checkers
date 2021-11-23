@@ -97,7 +97,8 @@ int gameloop(GameState *state)
     int argsCount = 0;
     char line[MAX_STR_LEN], rest[MAX_STR_LEN];
     char src[MAX_STR_LEN], dest[MAX_STR_LEN];
-    Array possibleJumps = array_new(sizeof(Move));
+    char t[MAX_STR_LEN] = {0};
+    Array possibleJumps = array_init(sizeof(Move));
     Move currentMove;
 
     while (state->activePlayer)
@@ -136,9 +137,33 @@ int gameloop(GameState *state)
             {
                 printf("<< Waiting for other player's input >>\n");
                 loadState(inputFilename, state, false);
-                msleep(500);
+                // msleep(500);
                 goto gameloop_start;
             }
+        else if (state->activePlayer == PLAYER_2)
+        {
+            // AI's turn
+            NEGAMAX_RETURN res = negamax(5, *state, -INT_MAX, INT_MAX);
+            currentMove        = res.move;
+            goto makemove;
+
+            // // DEBUG: delete this later
+            // if (debugMode)
+            // {
+            //     printf("\n\n### AI RESULTS ###\n");
+
+            //     printf("before\n");
+            //     NEGAMAX_RETURN res = negamax(5, *state, -INT_MAX, INT_MAX);
+            //     printf("after\n");
+            //     coord2str(t, res.move.src.i, res.move.src.j);
+            //     printf("%s -> ", t);
+            //     coord2str(t, res.move.dest.i, res.move.dest.j);
+            //     printf("%s\n", t);
+
+            //     printf("##################\n\n");
+            //     exit(1);
+            // }
+        }
 
         // print input line
         printf("Input: ");
@@ -176,7 +201,7 @@ int gameloop(GameState *state)
         fillAndValidateMove(state, &currentMove);
 
         // if move is valid, check for jumps
-        if (currentMove.moveType)
+        if (currentMove.moveType > 0)
         {
             getAllPossibleJumps(state, &possibleJumps);
             validateJump(state, &currentMove, possibleJumps);
@@ -207,82 +232,11 @@ int gameloop(GameState *state)
             continue;
         }
 
-        // move piece
+    makemove:
+        // move piece, update winner and activePlayer accordingly
         makeMove(state, currentMove);
-
-        // are there any more jumps available for this piece?
-        if (currentMove.moveType == MOVE_JUMP)
-        {
-            getPossibleJumps(state, &possibleJumps, currentMove.dest.i, currentMove.dest.j);
-
-            if (possibleJumps.length == 0)
-                // if there are no more jumps available, switch player
-                state->activePlayer = nextPlayer(state->activePlayer);
-            array_free(&possibleJumps);
-        }
-        else
-            state->activePlayer = nextPlayer(state->activePlayer);
-
-        // updates `state->winner` and `state->activePlayer` accordingly
-        updateWinState(state);
 
         state->lastMove = currentMove;
         saveState(inputFilename, state);
     }
-}
-
-void getPossibleJumps(GameState *state, Array *array, int i, int j)
-{
-    int k;
-    Move move;
-    char dest[3]     = {0};
-    int offsets[][2] = {
-        {-2, -2},
-        {-2, 2},
-        {2, -2},
-        {2, 2},
-    };
-
-    move.player = state->activePlayer;
-    move.src.i  = i;
-    move.src.j  = j;
-
-    for (k = 0; k < 4; k++)
-    {
-        move.crownPiece = 0;
-        move.moveType   = MOVE_INVALID;
-        move.dest.i     = i + offsets[k][0];
-        move.dest.j     = j + offsets[k][1];
-        strcpy(move.errorMessage, "Invalid move");
-
-        coord2str(dest, move.dest.i, move.dest.j);
-        if (isValidCell(dest))
-        {
-            fillAndValidateMove(state, &move);
-
-            if (debugMode) //DEBUG
-            {
-                char src[3] = {0};
-                coord2str(src, i, j);
-                printf("%s -> %s:\n", src, dest);
-                printf("\tmoveType = %d\n", move.moveType);
-                printf("\tmsg = %s\n", move.errorMessage);
-            }
-
-            if (move.moveType == MOVE_JUMP)
-                array_push(array, &move);
-        }
-    }
-}
-
-void getAllPossibleJumps(GameState *state, Array *array)
-{
-    int i, j;
-
-    for (i = 0; i < BOARD_SIZE; i++)
-        for (j = 0; j < BOARD_SIZE; j++)
-        {
-            if (state->board[i][j].piece.player == state->activePlayer)
-                getPossibleJumps(state, array, i, j);
-        }
 }

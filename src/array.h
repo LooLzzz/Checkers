@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "objects.h"
-
 /**
  * Array struct
  * @param length amount of items in the array
@@ -19,7 +17,7 @@ typedef struct _ARRAY
     void *data;
 } Array;
 
-Array array_new(int item_size);
+Array array_init(int item_size);
 
 /**
  * Clone given data and append it to the end of the array

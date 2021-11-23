@@ -9,11 +9,15 @@
 #include "array.h"
 #include "objects.h"
 #include "utils.h"
+#include "validation.h"
 
 void printState(GameState *state);
 void initializeState(GameState *state);
 void saveState(char *fileName, GameState *state);
 void loadState(char *fileName, GameState *state, bool askContinue);
+
+void getPossibleJumps(GameState *state, Array *array, int i, int j);
+void getAllPossibleJumps(GameState *state, Array *moves);
 
 void deletePiece(Cell board[][BOARD_SIZE], Coord src);
 void movePiece(Cell board[][BOARD_SIZE], Coord src, Coord dest);

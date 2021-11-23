@@ -1,6 +1,6 @@
 #include "array.h"
 
-Array array_new(int item_size)
+Array array_init(int item_size)
 {
     Array array = {
         .data = NULL,

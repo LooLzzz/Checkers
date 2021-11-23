@@ -140,27 +140,100 @@ void crownPiece(Cell board[][BOARD_SIZE], Coord src)
     board[src.i][src.j].piece.type = PIECE_KING;
 }
 
+void getPossibleJumps(GameState *state, Array *array, int i, int j)
+{
+    int k;
+    Move move;
+    char dest[3]     = {0};
+    int offsets[][2] = {
+        {-2, -2},
+        {-2, 2},
+        {2, -2},
+        {2, 2},
+    };
+
+    move.player = state->activePlayer;
+    move.src.i  = i;
+    move.src.j  = j;
+
+    for (k = 0; k < 4; k++)
+    {
+        move.crownPiece = 0;
+        move.moveType   = MOVE_INVALID;
+        move.dest.i     = i + offsets[k][0];
+        move.dest.j     = j + offsets[k][1];
+        strcpy(move.errorMessage, "Invalid move");
+
+        coord2str(dest, move.dest.i, move.dest.j);
+        if (isValidCell(dest))
+        {
+            fillAndValidateMove(state, &move);
+
+            if (debugMode) //DEBUG
+            {
+                char src[3] = {0};
+                coord2str(src, i, j);
+                printf("%s -> %s:\n", src, dest);
+                printf("\tmoveType = %d\n", move.moveType);
+                printf("\tmsg = %s\n", move.errorMessage);
+            }
+
+            if (move.moveType == MOVE_JUMP)
+                array_push(array, &move);
+        }
+    }
+}
+
+void getAllPossibleJumps(GameState *state, Array *moves)
+{
+    int i, j;
+
+    for (i = 0; i < BOARD_SIZE; i++)
+        for (j = 0; j < BOARD_SIZE; j++)
+        {
+            if (state->board[i][j].piece.player == state->activePlayer)
+                getPossibleJumps(state, moves, i, j);
+        }
+}
+
 void makeMove(GameState *state, Move move)
 {
-    Coord middleCoord = {.i = (move.src.i + move.dest.i) / 2,
+    Array possibleJumps = array_init(sizeof(Move));
+    Coord middleCoord   = {.i = (move.src.i + move.dest.i) / 2,
                          .j = (move.src.j + move.dest.j) / 2};
 
     // move to new location
     movePiece(state->board, move.src, move.dest);
 
-    // delete middle piece if needed
-    if (move.moveType == MOVE_JUMP)
-        deletePiece(state->board, middleCoord);
-
     // crown dest piece if needed
     if (move.crownPiece)
         crownPiece(state->board, move.dest);
+
+    if (move.moveType == MOVE_JUMP)
+    {
+        // delete captured piece from the board
+        deletePiece(state->board, middleCoord);
+
+        // are there any more jumps available for this piece?
+        getPossibleJumps(state, &possibleJumps, move.dest.i, move.dest.j);
+
+        if (possibleJumps.length == 0)
+            // if there are no more jumps available, switch player
+            state->activePlayer = nextPlayer(state->activePlayer);
+
+        array_free(&possibleJumps);
+    }
+    else
+        state->activePlayer = nextPlayer(state->activePlayer);
+
+    // updates `state->winner` and `state->activePlayer` accordingly
+    updateWinState(state);
 }
 
 void updateWinState(GameState *state)
 {
-    Array p1 = array_new(sizeof(Coord)); // PLAYER_1 pieces
-    Array p2 = array_new(sizeof(Coord)); // PLAYER_2 pieces
+    Array p1 = array_init(sizeof(Coord)); // PLAYER_1 pieces
+    Array p2 = array_init(sizeof(Coord)); // PLAYER_2 pieces
     Coord coord;
     int i, j;
 
