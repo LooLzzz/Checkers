@@ -2,22 +2,26 @@
 
 extern bool debugMode;
 
-NEGAMAX_RETURN negamax(int depth, GameState currentState, int alpha, int beta)
+NEGAMAX_RETURN negamax(Hashmap *map, int depth, GameState currentState, int alpha, int beta)
 {
     int i;
     int bestScore = -INT_MAX;
     Move *currentMove, bestMove;
     Array moves;
     GameState nextState;
-    NEGAMAX_RETURN res;
+    NEGAMAX_RETURN res, *hashmap_res;
+    uint64_t currentState_key = zobrist_hash(&currentState, depth);
 
-    // printf("depth: %d\n", depth); // DEBUG
-    // printf("alpha: %d\n", alpha); // DEBUG
-    // printf("beta: %d\n", beta); // DEBUG
+    hashmap_res = (NEGAMAX_RETURN *)hashmap_get(map, currentState_key);
+    if (hashmap_res)
+        return *hashmap_res;
 
     if (depth == 0 || currentState.winner)
     {
         res.score = evaluateState(currentState);
+        hashmap_res = (NEGAMAX_RETURN *)malloc(sizeof(NEGAMAX_RETURN));
+        *hashmap_res = res;
+        hashmap_put(map, currentState_key, hashmap_res);
         return res;
     }
 
@@ -34,7 +38,7 @@ NEGAMAX_RETURN negamax(int depth, GameState currentState, int alpha, int beta)
         makeMove(&nextState, *currentMove);
 
         // score = -negamax(-value)
-        res = negamax(depth - 1, nextState, -beta, -alpha);
+        res = negamax(map, depth - 1, nextState, -beta, -alpha);
         res.score *= -1;
         res.move = *currentMove;
 
@@ -45,13 +49,17 @@ NEGAMAX_RETURN negamax(int depth, GameState currentState, int alpha, int beta)
         }
 
         alpha = max(alpha, res.score);
-        if (alpha >= beta)
+        if (alpha > beta) // cutoff
             break;
     }
 
     res.move  = bestMove;
     res.score = bestScore;
     array_free(&moves);
+
+    hashmap_res  = (NEGAMAX_RETURN *)malloc(sizeof(NEGAMAX_RETURN));
+    *hashmap_res = res;
+    hashmap_put(map, currentState_key, hashmap_res);
 
     return res;
 }

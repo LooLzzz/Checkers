@@ -13,8 +13,20 @@ void printState(GameState *state)
 
     // print active player
     printf("\n%12s", ""); // whitespace padding
-    player2str(state->activePlayer, str);
-    printf("%s's turn %s\n", str, ESC);
+    if (state->winner == PLAYER_NONE)
+    {
+        player2str(state->activePlayer, str);
+        printf("%s's turn %s\n", str, ESC);
+    }
+    else if (state->winner == DRAW)
+    {
+        printf("%s it's a Draw! %s\n", PLAYER2_TXT, ESC);
+    }
+    else
+    {
+        player2str(state->winner, str);
+        printf("%s won! %s\n", str, ESC);
+    }
 
     // print letter on the top
     printf("\n%3s", "");

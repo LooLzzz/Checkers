@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "hashmap.h"
 #include "minmax.h"
 #include "objects.h"
 #include "state.h"

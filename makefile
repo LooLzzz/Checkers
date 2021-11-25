@@ -10,7 +10,7 @@ gccFlags = -g -Wno-write-strings -Werror
 gccFlagsTarget = -lm
 
 target = checkers.exe
-objects = main state utils validation array tree minmax
+objects = main state utils validation array list minmax hashmap zobrist
 headerDeps = objects
 
 objectsExpanded = $(foreach obj, ${objects}, $(bindir)/${obj}.o) # objects.map(obj => `./${bindir}/${obj}.o`)

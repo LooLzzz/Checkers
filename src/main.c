@@ -81,12 +81,7 @@ int main(int argc, char *argv[])
     }
 
     if (state.winner)
-        printf("%s\n",
-               state.winner == PLAYER_1
-                   ? str2playercolor("PLAYER1 won!", state.winner)
-                   : str2playercolor("PLAYER2 won!", state.winner));
-    else if (state.winner == DRAW)
-        printf("Draw!\n");
+        printState(&state);
 
     printf("Exiting..");
     return 0;
@@ -100,6 +95,7 @@ int gameloop(GameState *state)
     char t[MAX_STR_LEN] = {0};
     Array possibleJumps = array_init(sizeof(Move));
     Move currentMove;
+    Hashmap map = hashmap_init();
 
     while (state->activePlayer)
     {
@@ -133,6 +129,7 @@ int gameloop(GameState *state)
         }
 
         if (gamemode == GAME_MP)
+        {
             while (state->activePlayer != self)
             {
                 printf("<< Waiting for other player's input >>\n");
@@ -140,29 +137,14 @@ int gameloop(GameState *state)
                 // msleep(500);
                 goto gameloop_start;
             }
+        }
         else if (state->activePlayer == PLAYER_2)
         {
             // AI's turn
-            NEGAMAX_RETURN res = negamax(5, *state, -INT_MAX, INT_MAX);
+            printf("<< Waiting for AI's input >>\n");
+            NEGAMAX_RETURN res = negamax(&map, 5, *state, -INT_MAX, INT_MAX);
             currentMove        = res.move;
             goto makemove;
-
-            // // DEBUG: delete this later
-            // if (debugMode)
-            // {
-            //     printf("\n\n### AI RESULTS ###\n");
-
-            //     printf("before\n");
-            //     NEGAMAX_RETURN res = negamax(5, *state, -INT_MAX, INT_MAX);
-            //     printf("after\n");
-            //     coord2str(t, res.move.src.i, res.move.src.j);
-            //     printf("%s -> ", t);
-            //     coord2str(t, res.move.dest.i, res.move.dest.j);
-            //     printf("%s\n", t);
-
-            //     printf("##################\n\n");
-            //     exit(1);
-            // }
         }
 
         // print input line
@@ -239,4 +221,7 @@ int gameloop(GameState *state)
         state->lastMove = currentMove;
         saveState(inputFilename, state);
     }
+
+    hashmap_free(&map);
+    return 0;
 }
